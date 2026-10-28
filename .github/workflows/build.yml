@@ -1,0 +1,57 @@
+name: Build StoreSync APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Extract StoreSync project ZIP
+        run: |
+          ZIP_FILE="$(find . -maxdepth 1 -type f -iname '*.zip' | head -n 1)"
+          if [ -z "$ZIP_FILE" ]; then
+            echo "StoreSync ZIP not found in repository root."
+            exit 1
+          fi
+          mkdir extracted
+          unzip -q "$ZIP_FILE" -d extracted
+
+      - name: Add Supabase publishable key
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "Add the SUPABASE_PUBLISHABLE_KEY repository secret."
+            exit 1
+          fi
+          sed -i "s|PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE|$SUPABASE_PUBLISHABLE_KEY|" extracted/app/src/main/java/com/storesync/app/AppConfig.kt
+
+      - name: Build debug APK
+        working-directory: extracted
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StoreSync-debug-APK
+          path: extracted/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          
