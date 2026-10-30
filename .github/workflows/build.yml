@@ -29,7 +29,8 @@ jobs:
           ZIP_FILE="./StoreSync_Password_Catalogue_v4_PhotoPicker.zip"
 
           if [ ! -f "$ZIP_FILE" ]; then
-            echo "ERROR: PhotoPicker ZIP not found."
+            echo "ERROR: StoreSync PhotoPicker ZIP not found."
+            echo "Expected filename: StoreSync_Password_Catalogue_v4_PhotoPicker.zip"
             exit 1
           fi
 
@@ -37,7 +38,7 @@ jobs:
           unzip -q "$ZIP_FILE" -d extracted
 
           if [ ! -f extracted/settings.gradle.kts ]; then
-            echo "ERROR: Android project not found."
+            echo "ERROR: Android project not found in ZIP."
             exit 1
           fi
 
@@ -46,7 +47,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "ERROR: Add SUPABASE_PUBLISHABLE_KEY secret."
+            echo "ERROR: Add SUPABASE_PUBLISHABLE_KEY repository secret."
             exit 1
           fi
 
