@@ -1,4 +1,3 @@
-
 name: Build StoreSync APK
 
 on:
@@ -25,12 +24,12 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Extract StoreSync v3 project ZIP
+      - name: Extract StoreSync PhotoPicker ZIP
         run: |
-          ZIP_FILE="$(find . -maxdepth 1 -type f -iname '*.zip' | head -n 1)"
+          ZIP_FILE="./StoreSync_Password_Catalogue_v4_PhotoPicker.zip"
 
-          if [ -z "$ZIP_FILE" ]; then
-            echo "ERROR: StoreSync ZIP not found in repository root."
+          if [ ! -f "$ZIP_FILE" ]; then
+            echo "ERROR: PhotoPicker ZIP not found."
             exit 1
           fi
 
@@ -38,7 +37,7 @@ jobs:
           unzip -q "$ZIP_FILE" -d extracted
 
           if [ ! -f extracted/settings.gradle.kts ]; then
-            echo "ERROR: ZIP does not contain the expected Android project."
+            echo "ERROR: Android project not found."
             exit 1
           fi
 
@@ -47,7 +46,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "ERROR: Add the SUPABASE_PUBLISHABLE_KEY repository secret."
+            echo "ERROR: Add SUPABASE_PUBLISHABLE_KEY secret."
             exit 1
           fi
 
@@ -61,7 +60,6 @@ jobs:
       - name: Upload StoreSync APK
         uses: actions/upload-artifact@v4
         with:
-          name: StoreSync-v3-debug-APK
+          name: StoreSync-PhotoPicker-APK
           path: extracted/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          
