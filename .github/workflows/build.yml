@@ -1,3 +1,4 @@
+
 name: Build StoreSync APK
 
 on:
@@ -27,19 +28,12 @@ jobs:
 
       - name: Extract StoreSync project
         run: |
-          ZIP_FILE="StoreSync_v6_Notes_Units_Updates.zip"
-
-          if [ ! -f "$ZIP_FILE" ]; then
-            echo "ERROR: $ZIP_FILE was not found in the repository."
-            exit 1
-          fi
-
+          ZIP_FILE="StoreSync_v7_Splash_SwipeEditor.zip"
+          test -f "$ZIP_FILE" || { echo "ERROR: ZIP not found"; exit 1; }
           mkdir -p app-source
           unzip -q "$ZIP_FILE" -d app-source
 
-          echo "Project files extracted successfully."
-
-      - name: Configure Supabase key
+      - name: Configure Supabase publishable key
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
@@ -48,39 +42,29 @@ jobs:
           from pathlib import Path
 
           key = os.environ.get("SUPABASE_KEY", "")
-
           if not key:
-              raise SystemExit(
-                  "ERROR: SUPABASE_PUBLISHABLE_KEY is missing or empty."
-              )
+              raise SystemExit("Supabase key secret is missing")
 
-          config = Path(
-              "app-source/app/src/main/java/com/storesync/app/AppConfig.kt"
-          )
+          matches = list(Path("app-source").rglob("AppConfig.kt"))
+          if len(matches) != 1:
+              raise SystemExit("Expected exactly one AppConfig.kt")
 
-          if not config.is_file():
-              raise SystemExit("ERROR: AppConfig.kt was not found.")
-
-          content = config.read_text()
-
+          path = matches[0]
+          content = path.read_text()
           placeholder = "PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE"
 
           if placeholder not in content:
-              raise SystemExit(
-                  "ERROR: Expected key placeholder was not found in AppConfig.kt."
-              )
+              raise SystemExit("Key placeholder not found")
 
-          content = content.replace(placeholder, key)
-          config.write_text(content)
+          path.write_text(content.replace(placeholder, key))
+          print("Supabase key configured")
 
-          print("Supabase publishable key configured successfully.")
           PY
 
       - name: Build StoreSync APK
         run: |
           cd app-source
-
-          if [ -f "gradlew" ]; then
+          if [ -f gradlew ]; then
             chmod +x gradlew
             ./gradlew --no-daemon assembleDebug
           else
@@ -91,5 +75,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: StoreSync-APK
-          path: app-source/app/build/outputs/apk/debug/*.apk
+          path: app-source/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          
